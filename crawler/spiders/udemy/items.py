@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import scrapy
-import markdown as md
+import requests
+import html2markdown
 from slugify import slugify
 from datetime import datetime
+
+BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
 
 class UdemyItem(scrapy.Item):
@@ -111,7 +115,11 @@ class UdemyItemParser(object):
 
     @property
     def created(self):
-        result = self.response['last_update_date']
+        if self.response['last_update_date'] is not None:
+            result = self.response['last_update_date']
+        else:
+            date = datetime.strptime(self.response['created'], "%Y-%m-%dT%H:%M:%SZ")
+            result = date.strftime('%Y-%m-%d')
         return result
 
     @property
@@ -151,11 +159,11 @@ class UdemyItemParser(object):
 
     @property
     def captions(self):
-        if self.response['captions'] is None \
-                or self.response['captions'] == '':
+        if self.response['caption_languages'] is None \
+                or self.response['caption_languages'] == '':
             return None
 
-        result = self.response['captions']
+        result = self.response['caption_languages']
         return result
 
     @property
@@ -176,6 +184,22 @@ class UdemyItemParser(object):
     @property
     def price(self):
         return self.response['price']
+
+    @property
+    def absolute_path(self):
+        return os.path.join(BASE_PATH, self.permanent_url)
+
+    def download_thumbnail(self):
+        path = os.path.join(self.absolute_path, self.thumbnail)
+        with open(path, "wb") as f:
+            data = requests.get(self.response['image_750x422'])
+            f.write(data.content)
+
+    def save_to_mdx(self):
+        path = os.path.join(self.absolute_path, f'{self.slug}.mdx')
+        with open(path, "w", encoding='utf8') as f:
+            data = self.export_to_markdown()
+            f.write(data)
 
     def export_to_json(self):
         return dict(
@@ -246,6 +270,8 @@ class UdemyItemParser(object):
             ul = f"<ul>{''.join(li)}</ul>"
             content.append(f"{ul}")
 
+        faq = [f"<strong>{item['question']}</strong><p>{item['answer']}</p>" for item in self.faq]
+
         content.extend(
             [
                 f"\n<h2>Instructional Level</h2>",
@@ -253,12 +279,12 @@ class UdemyItemParser(object):
                 f"\n<h2>Content Info</h2>",
                 f"{self.content_info}",
                 f"\n<h2>FAQ</h2>",
-                f"{''.join(self.faq)}"
+                f"{''.join(faq)}"
             ]
         )
 
         markdown = [
-            md.markdown('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
+            html2markdown.convert('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
             f"\n<ButtonLink to='https://www.udemy.com{self.url}' "
             f"variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
         ]
