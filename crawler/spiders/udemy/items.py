@@ -13,13 +13,11 @@ BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
 class UdemyItem(scrapy.Item):
     cid = scrapy.Field()
-    version = scrapy.Field()
     url = scrapy.Field()
     title = scrapy.Field()
     slug = scrapy.Field()
     permanent_url = scrapy.Field()
     headline = scrapy.Field()
-    thumbnail = scrapy.Field()
     category = scrapy.Field()
     subcategory = scrapy.Field()
     tags = scrapy.Field()
@@ -46,12 +44,6 @@ class UdemyItemParser(object):
         return result
 
     @property
-    def version(self):
-        date = datetime.strptime(self.created, '%Y-%m-%d')
-        result = date.strftime('%y%m%d')
-        return result
-
-    @property
     def url(self):
         result = self.response['url']
         return result
@@ -68,17 +60,12 @@ class UdemyItemParser(object):
 
     @property
     def permanent_url(self):
-        result = f"{slugify(self.category.replace('&', 'and').lower())}/{self.version}/{self.slug}"
+        result = f"{slugify(self.category.replace('&', 'and').lower())}/{self.slug}"
         return result
 
     @property
     def headline(self):
         result = self.response['headline'].replace('  ', ' ')
-        return result
-
-    @property
-    def thumbnail(self):
-        result = f'{self.slug}.jpg'
         return result
 
     @property
@@ -193,10 +180,10 @@ class UdemyItemParser(object):
 
     @property
     def absolute_path(self):
-        return os.path.join(BASE_PATH, self.permanent_url)
+        return os.path.join(BASE_PATH, f"{slugify(self.category.replace('&', 'and').lower())}", self.cid)
 
     def download_thumbnail(self):
-        path = os.path.join(self.absolute_path, self.thumbnail)
+        path = os.path.join(self.absolute_path, f'{self.slug}.jpg')
         with open(path, "wb") as f:
             data = requests.get(self.response['image_750x422'])
             f.write(data.content)
@@ -210,13 +197,12 @@ class UdemyItemParser(object):
     def export_to_json(self):
         return dict(
             cid=self.cid,
-            version=self.version,
             url=self.url,
             title=self.title,
             slug=self.slug,
             permanent_url=self.permanent_url,
             headline=self.headline,
-            thumbnail=self.thumbnail,
+            thumbnail=f'{self.slug}.jpg',
             category=self.category,
             subcategory=self.subcategory,
             tags=self.tags,
@@ -243,7 +229,7 @@ class UdemyItemParser(object):
             f"tags: {self.tags}",
             f"keywords: {self.keywords}",
             f"date: {self.created}",
-            f"thumbnail: {self.thumbnail}",
+            f"thumbnail: {self.slug}.jpg",
             f"featured: true",
             f"---",
             f"\nimport ButtonLink from '@components/Mdx/ButtonLink'",
