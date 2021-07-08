@@ -93,7 +93,11 @@ class UdemyItemParser(object):
 
     @property
     def tags(self):
-        result = [f'#{slugify(self.category, to_lower=True)}']
+        result = [
+            f'#freecoursediscounts',
+            f'#udemy',
+            f'#{slugify(self.category, to_lower=True)}'
+        ]
 
         if self.subcategory:
             result.append(f'#{slugify(self.subcategory, to_lower=True)}')
@@ -103,7 +107,7 @@ class UdemyItemParser(object):
     @property
     def keywords(self):
         result = [
-            f'Real Course Discounts',
+            f'Free Course Discounts',
             f'Udemy',
             f'{self.category}'
         ]
@@ -127,7 +131,9 @@ class UdemyItemParser(object):
         result = self.response['description'] \
             .replace('<li><p>', '<li>') \
             .replace('</p></li>', '</li>') \
-            .replace(' style=""', '')
+            .replace(' style=""', '') \
+            .replace('&nbsp;', ' ') \
+            .replace('\n\n', '')
         return result
 
     @property
@@ -233,7 +239,7 @@ class UdemyItemParser(object):
             f"title: {self.title}",
             f"slug: {self.permanent_url}",
             f"category: {self.category}",
-            f"author: Real Course Discounts",
+            f"author: Free Course Discounts",
             f"tags: {self.tags}",
             f"keywords: {self.keywords}",
             f"date: {self.created}",
