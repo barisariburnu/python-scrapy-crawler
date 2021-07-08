@@ -1,8 +1,8 @@
 import os
 import scrapy
 import json
-import requests
 import shutil
+from datetime import datetime
 from crawler.spiders.udemy import config
 from pymongo import MongoClient
 from crawler.spiders.udemy.items import UdemyItemParser, BASE_PATH
@@ -57,6 +57,17 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
 
         for item in unit['items']:
             ids = item['id']
+
+            if item['last_update_date'] is not None:
+                created = item['last_update_date']
+            else:
+                date = datetime.strptime(item['created'], "%Y-%m-%dT%H:%M:%SZ")
+                created = date.strftime('%Y-%m-%d')
+
+            if db.udemy.find_one({"cid": ids, "created": created}):
+                print('Already exists posts: {0}'.format(ids))
+                return
+
             url = f"{config.BASE_URL}/courses/{ids}/?fields[course]=@all"
             yield scrapy.Request(url=url, callback=self.parse_item)
 
@@ -68,10 +79,6 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
         """""
         data = json.loads(response.body)
         item = UdemyItemParser(data)
-
-        if db.udemy.find_one({"cid": item.cid, "created": item.created}):
-            print('Already exists posts: {0}'.format(item.cid))
-            return
 
         if not os.path.isdir(item.absolute_path):
             os.makedirs(item.absolute_path)
