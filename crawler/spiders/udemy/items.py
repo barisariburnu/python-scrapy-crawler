@@ -32,6 +32,7 @@ class UdemyItem(scrapy.Item):
     content_info = scrapy.Field()
     faq = scrapy.Field()
     price = scrapy.Field()
+    coupon_code = scrapy.Field()
 
 
 class UdemyItemParser(object):
@@ -40,7 +41,7 @@ class UdemyItemParser(object):
 
     @property
     def cid(self):
-        result = self.response['id']
+        result = str(self.response['id'])
         return result
 
     @property
@@ -50,7 +51,7 @@ class UdemyItemParser(object):
 
     @property
     def title(self):
-        result = self.response['title'].replace(':', ' -').replace('  ', ' ')
+        result = self.response['title'].replace(':', ' -').replace('  ', ' ').replace("'", "''")
         return result
 
     @property
@@ -179,17 +180,21 @@ class UdemyItemParser(object):
         return self.response['price']
 
     @property
+    def coupon_code(self):
+        return 'FreeCourseDiscounts' if self.price == 'Free' else None
+
+    @property
     def absolute_path(self):
         return os.path.join(BASE_PATH, f"{slugify(self.category.replace('&', 'and').lower())}", self.cid)
 
     def download_thumbnail(self):
-        path = os.path.join(self.absolute_path, f'{self.slug}.jpg')
+        path = os.path.join(self.absolute_path, f'image.jpg')
         with open(path, "wb") as f:
             data = requests.get(self.response['image_750x422'])
             f.write(data.content)
 
     def save_to_mdx(self):
-        path = os.path.join(self.absolute_path, f'{self.slug}.mdx')
+        path = os.path.join(self.absolute_path, f'index.mdx')
         with open(path, "w", encoding='utf8') as f:
             data = self.export_to_markdown()
             f.write(data)
@@ -202,7 +207,7 @@ class UdemyItemParser(object):
             slug=self.slug,
             permanent_url=self.permanent_url,
             headline=self.headline,
-            thumbnail=f'{self.slug}.jpg',
+            thumbnail=f'image.jpg',
             category=self.category,
             subcategory=self.subcategory,
             tags=self.tags,
@@ -216,20 +221,21 @@ class UdemyItemParser(object):
             instructional_level=self.instructional_level,
             content_info=self.content_info,
             faq=self.faq,
-            price=self.price
+            price=self.price,
+            coupon_code=self.coupon_code
         )
 
     def export_to_markdown(self):
         content = [
             f"---",
-            f"title: {self.title}",
+            f"title: '{self.title}'",
             f"slug: {self.permanent_url}",
             f"category: {self.category}",
             f"author: Free Course Discounts",
             f"tags: {self.tags}",
             f"keywords: {self.keywords}",
             f"date: {self.created}",
-            f"thumbnail: {self.slug}.jpg",
+            f"thumbnail: image.jpg",
             f"featured: true",
             f"---",
             f"\nimport ButtonLink from '@components/Mdx/ButtonLink'",
@@ -277,7 +283,7 @@ class UdemyItemParser(object):
 
         markdown = [
             html2markdown.convert('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
-            f"\n<ButtonLink to='https://www.udemy.com{self.url}' "
+            f"\n<ButtonLink href='https://www.udemy.com{self.url}' "
             f"variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
         ]
 
