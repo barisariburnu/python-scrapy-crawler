@@ -121,7 +121,9 @@ class UdemyItemParser(object):
             .replace('</p></li>', '</li>') \
             .replace(' style=""', '') \
             .replace('&nbsp;', ' ') \
-            .replace('\n\n', '')
+            .replace('\n\n', '') \
+            .replace('<u>', '') \
+            .replace('</u>', '')
         return result
 
     @property
