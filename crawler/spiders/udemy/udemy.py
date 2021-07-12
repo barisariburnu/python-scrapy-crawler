@@ -64,7 +64,7 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
                 date = datetime.strptime(item['created'], "%Y-%m-%dT%H:%M:%SZ")
                 created = date.strftime('%Y-%m-%d')
 
-            if db.udemy.find_one({"cid": ids, "created": created}):
+            if db.udemy.find_one({"$and": [{"cid": ids}, {"created": created}]}):
                 print('Already exists posts: {0}'.format(ids))
                 return
 
@@ -80,16 +80,17 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
         data = json.loads(response.body)
         item = UdemyItemParser(data)
 
-        if not os.path.isdir(item.absolute_path):
-            os.makedirs(item.absolute_path)
+        if item.price == 'Free':
+            if not os.path.isdir(item.absolute_path):
+                os.makedirs(item.absolute_path)
 
-        try:
-            item.download_thumbnail()
-            item.save_to_mdx()
-        except Exception as ex:
-            shutil.rmtree(item.absolute_path)
-            print(f'Error : {ex}')
-            return
+            try:
+                item.download_thumbnail()
+                item.save_to_mdx()
+            except Exception as ex:
+                shutil.rmtree(item.absolute_path)
+                print(f'Error : {ex}')
+                return
 
         if str(db.udemy.insert_one(item.export_to_json())):
             print(f'Successul: {item.permanent_url}')
