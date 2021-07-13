@@ -21,6 +21,7 @@ class UdemyItem(scrapy.Item):
     category = scrapy.Field()
     subcategory = scrapy.Field()
     tags = scrapy.Field()
+    image_url = scrapy.Field()
     keywords = scrapy.Field()
     created = scrapy.Field()
     description = scrapy.Field()
@@ -77,6 +78,11 @@ class UdemyItemParser(object):
     @property
     def subcategory(self):
         result = self.response['primary_subcategory']['title']
+        return result
+
+    @property
+    def image_url(self):
+        result = self.response['image_750x422']
         return result
 
     @property
@@ -190,13 +196,13 @@ class UdemyItemParser(object):
         return os.path.join(BASE_PATH, f"{slugify(self.category.replace('&', 'and').lower())}", self.cid)
 
     def download_thumbnail(self):
-        path = os.path.join(self.absolute_path, f'image.jpg')
+        path = os.path.join(self.absolute_path, f'{self.slug}.jpg')
         with open(path, "wb") as f:
-            data = requests.get(self.response['image_750x422'])
+            data = requests.get(self.image_url)
             f.write(data.content)
 
     def save_to_mdx(self):
-        path = os.path.join(self.absolute_path, f'index.mdx')
+        path = os.path.join(self.absolute_path, f'{self.slug}.mdx')
         with open(path, "w", encoding='utf8') as f:
             data = self.export_to_markdown()
             f.write(data)
@@ -209,7 +215,8 @@ class UdemyItemParser(object):
             slug=self.slug,
             permanent_url=self.permanent_url,
             headline=self.headline,
-            thumbnail=f'image.jpg',
+            image_url=self.image_url,
+            thumbnail=f'{self.slug}.jpg',
             category=self.category,
             subcategory=self.subcategory,
             tags=self.tags,
@@ -285,7 +292,7 @@ class UdemyItemParser(object):
 
         markdown = [
             html2markdown.convert('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
-            f"\n<ButtonLink href='https://www.udemy.com{self.url}' "
+            f"\n<ButtonLink href='http://sh.st/st/d1d5010ffd90d13f46149d5657dbbccc/udemy.com{self.url}' "
             f"variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
         ]
 
