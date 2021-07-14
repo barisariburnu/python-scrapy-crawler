@@ -310,7 +310,7 @@ class UdemyItemParser(object):
 
         markdown = [
             html2markdown.convert('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
-            f"\n<ButtonLink href='{self.shorten_url} variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
+            f"\n<ButtonLink href='{self.shorten_url}' variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
         ]
 
         result = '\n'.join(markdown)
