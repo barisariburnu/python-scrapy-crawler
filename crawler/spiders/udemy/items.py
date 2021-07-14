@@ -5,11 +5,11 @@ import os
 import json
 import scrapy
 import random
-import config
 import requests
 import html2markdown
 from slugify import slugify
 from datetime import datetime
+from crawler.spiders.udemy import config
 from crawler.user_agents import USER_AGENT_LIST
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
