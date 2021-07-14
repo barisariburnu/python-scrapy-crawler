@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import os
+import json
 import scrapy
+import random
+import config
 import requests
 import html2markdown
 from slugify import slugify
 from datetime import datetime
+from crawler.user_agents import USER_AGENT_LIST
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
@@ -33,12 +37,14 @@ class UdemyItem(scrapy.Item):
     content_info = scrapy.Field()
     faq = scrapy.Field()
     price = scrapy.Field()
+    shorten_url = scrapy.Field()
     coupon_code = scrapy.Field()
 
 
 class UdemyItemParser(object):
     def __init__(self, response):
         self.response = response
+        self.__shortened_url = None
 
     @property
     def cid(self):
@@ -188,6 +194,17 @@ class UdemyItemParser(object):
         return self.response['price']
 
     @property
+    def shorten_url(self):
+        if not self.__shortened_url:
+            user_agent = random.choice(USER_AGENT_LIST)
+            headers = {'user_agent': user_agent, 'public-api-token': config.SHORTEST_TOKEN}
+            data = dict(urlToShorten=f'https://udemy.com{self.url}')
+            response = requests.put(config.SHORTEST_API_URL, data, headers=headers, verify=False)
+            shortened_url = json.loads(response.content)
+            self.__shortened_url = shortened_url['shortenedUrl']
+        return self.__shortened_url
+
+    @property
     def coupon_code(self):
         return 'FreeCourseDiscounts' if self.price == 'Free' else None
 
@@ -231,6 +248,7 @@ class UdemyItemParser(object):
             content_info=self.content_info,
             faq=self.faq,
             price=self.price,
+            shorten_url=self.shorten_url,
             coupon_code=self.coupon_code
         )
 
@@ -244,7 +262,7 @@ class UdemyItemParser(object):
             f"tags: {self.tags}",
             f"keywords: {self.keywords}",
             f"date: {self.created}",
-            f"thumbnail: image.jpg",
+            f"thumbnail: {self.slug}.jpg",
             f"featured: true",
             f"---",
             f"\nimport ButtonLink from '@components/Mdx/ButtonLink'",
@@ -292,8 +310,7 @@ class UdemyItemParser(object):
 
         markdown = [
             html2markdown.convert('\n'.join(content)).replace('&amp', '&').replace('&;', '&'),
-            f"\n<ButtonLink href='http://sh.st/st/d1d5010ffd90d13f46149d5657dbbccc/udemy.com{self.url}' "
-            f"variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
+            f"\n<ButtonLink href='{self.shorten_url} variant='primary' aria-label='Enroll Now'>Enroll Now</ButtonLink>"
         ]
 
         result = '\n'.join(markdown)
