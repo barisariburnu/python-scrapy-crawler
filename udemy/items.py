@@ -7,12 +7,10 @@ import scrapy
 import random
 import requests
 import html2markdown
+from udemy import settings
 from slugify import slugify
 from datetime import datetime
-from crawler.spiders.udemy import config
-from crawler.user_agents import USER_AGENT_LIST
-
-BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+from udemy.user_agents import USER_AGENT_LIST
 
 
 class UdemyItem(scrapy.Item):
@@ -28,7 +26,6 @@ class UdemyItem(scrapy.Item):
     image_url = scrapy.Field()
     keywords = scrapy.Field()
     created = scrapy.Field()
-    description = scrapy.Field()
     requirements_data = scrapy.Field()
     what_you_will_learn_data = scrapy.Field()
     who_should_attend_data = scrapy.Field()
@@ -127,18 +124,6 @@ class UdemyItemParser(object):
         return result
 
     @property
-    def description(self):
-        result = self.response['description'] \
-            .replace('<li><p>', '<li>') \
-            .replace('</p></li>', '</li>') \
-            .replace(' style=""', '') \
-            .replace('&nbsp;', ' ') \
-            .replace('\n\n', '') \
-            .replace('<u>', '') \
-            .replace('</u>', '')
-        return result
-
-    @property
     def requirements_data(self):
         if self.response['requirements_data']['items'] is None \
                 or self.response['requirements_data']['items'] == '':
@@ -197,9 +182,9 @@ class UdemyItemParser(object):
     def shorten_url(self):
         if not self.__shortened_url:
             user_agent = random.choice(USER_AGENT_LIST)
-            headers = {'user_agent': user_agent, 'public-api-token': config.SHORTEST_TOKEN}
+            headers = {'user_agent': user_agent, 'public-api-token': settings.SHORTEST_TOKEN}
             data = dict(urlToShorten=f'https://udemy.com{self.url}')
-            response = requests.put(config.SHORTEST_API_URL, data, headers=headers, verify=False)
+            response = requests.put(settings.SHORTEST_API_URL, data, headers=headers, verify=False)
             shortened_url = json.loads(response.content)
             self.__shortened_url = shortened_url['shortenedUrl']
         return self.__shortened_url
@@ -210,7 +195,7 @@ class UdemyItemParser(object):
 
     @property
     def absolute_path(self):
-        return os.path.join(BASE_PATH, f"{slugify(self.category.replace('&', 'and').lower())}", self.cid)
+        return os.path.join(settings.DATA_PATH, f"{slugify(self.category.replace('&', 'and').lower())}", self.cid)
 
     def download_thumbnail(self):
         path = os.path.join(self.absolute_path, f'{self.slug}.jpg')
@@ -239,7 +224,6 @@ class UdemyItemParser(object):
             tags=self.tags,
             keywords=self.keywords,
             created=self.created,
-            description=self.description,
             requirements_data=self.requirements_data,
             what_you_will_learn_data=self.what_you_will_learn_data,
             who_should_attend_data=self.who_should_attend_data,
@@ -266,9 +250,7 @@ class UdemyItemParser(object):
             f"featured: true",
             f"---",
             f"\nimport ButtonLink from '@components/Mdx/ButtonLink'",
-            f"\n{self.headline}",
-            f"\n<h2>Description</h2>",
-            f"\n{self.description}"
+            f"\n{self.headline}"
         ]
 
         if self.requirements_data:

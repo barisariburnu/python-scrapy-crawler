@@ -1,23 +1,16 @@
-import os
-import scrapy
 import json
+import os
 import shutil
+import pickledb
+from scrapy import spiders, Request
 from datetime import datetime
-from crawler.spiders.udemy import config
-from pymongo import MongoClient
-from crawler.spiders.udemy.items import UdemyItemParser, BASE_PATH
+from udemy import settings
+from udemy.items import UdemyItemParser
 
-client = MongoClient(
-    f'mongodb://{config.MONGO_USERNAME}:{config.MONGO_PASSWORD}@'
-    f'ireland-shard-00-00.xjelg.mongodb.net:27017,'
-    'ireland-shard-00-01.xjelg.mongodb.net:27017,'
-    'ireland-shard-00-02.xjelg.mongodb.net:27017/crawler?'
-    'ssl=true&replicaSet=atlas-nrk72v-shard-0&authSource=admin&retryWrites=true&w=majority'
-)
-db = client.get_default_database()
+db = pickledb.load(os.path.join(settings.DATA_PATH, 'udemy.db'), True)
 
 
-class UdemySpider(scrapy.spiders.CrawlSpider):
+class UdemySpider(spiders.CrawlSpider):
     name = 'udemy'
     allowed_domains = ['udemy.com']
     start_urls = ['https://udemy.com']
@@ -27,9 +20,9 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
         CATEGORY_IDs dizisinde belirtilen tüm kategorilerin adres bilgisini oluşturur.
         Oluşturduğu tüm adreslerine istek atar.
         """""
-        for ids in config.CATEGORY_IDs:
-            url = f'{config.BASE_URL}{config.ALL_COURSE_URL}/?category_id={ids}&{config.PARAMS}'
-            yield scrapy.Request(url=url, callback=self.parse_pagination, cb_kwargs=dict(category_id=ids))
+        for ids in settings.CATEGORY_IDs:
+            url = f'{settings.BASE_URL}{settings.ALL_COURSE_URL}/?category_id={ids}&{settings.PARAMS}'
+            yield Request(url=url, callback=self.parse_pagination, cb_kwargs=dict(category_id=ids))
 
     def parse_pagination(self, response, category_id):
         """""
@@ -42,8 +35,8 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
         total_page = data['unit']['pagination']['total_page']
 
         for page in range(1, total_page + 1):
-            url = f'{config.BASE_URL}{config.ALL_COURSE_URL}/?category_id={category_id}&{config.PARAMS}&p={page}'
-            yield scrapy.Request(url=url, callback=self.parse_list_page)
+            url = f'{settings.BASE_URL}{settings.ALL_COURSE_URL}/?category_id={category_id}&{settings.PARAMS}&p={page}'
+            yield Request(url=url, callback=self.parse_list_page)
 
     def parse_list_page(self, response):
         """""
@@ -64,18 +57,18 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
                 date = datetime.strptime(item['created'], "%Y-%m-%dT%H:%M:%SZ")
                 created = date.strftime('%Y-%m-%d')
 
-            if db.udemy.find_one({"$and": [{"cid": ids}, {"created": created}]}):
-                print('Already exists posts: {0}'.format(ids))
+            course = db.get(ids)
+            if course and course['created'] == created:
+                print('Already exists course: {0}'.format(ids))
                 return
 
-            url = f"{config.BASE_URL}/courses/{ids}/?fields[course]=@all"
-            yield scrapy.Request(url=url, callback=self.parse_item)
+            url = f"{settings.BASE_URL}/courses/{ids}/?fields[course]=@all"
+            yield Request(url=url, callback=self.parse_item)
 
     def parse_item(self, response):
         """""
         parse_list_page içerisinden yapılan istekler sonucunda gelen cevapları alır.
-        Eğitimin tüm içeriği parse edilir. Veritabanındaki kayıt bilgisi kontrol edilir.
-        Thumbnail indirilir. MDX dosyası oluşturulur. Veritabanına kayıt edilir.
+        Eğitimin tüm içeriği parse edilir.
         """""
         data = json.loads(response.body)
         item = UdemyItemParser(data)
@@ -91,8 +84,5 @@ class UdemySpider(scrapy.spiders.CrawlSpider):
                 shutil.rmtree(item.absolute_path)
                 print(f'Error : {ex}')
                 return
-
-        if str(db.udemy.insert_one(item.export_to_json())):
-            print(f'Successul: {item.permanent_url}')
 
         return item.export_to_json()

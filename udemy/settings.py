@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Scrapy settings for crawler project
+import os
+
+# Scrapy settings for udemy project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -9,14 +11,22 @@
 #     https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'crawler'
+BOT_NAME = 'udemy'
 
-SPIDER_MODULES = ['crawler.spiders']
-NEWSPIDER_MODULE = 'crawler.spiders'
+SPIDER_MODULES = ['udemy.spiders']
+NEWSPIDER_MODULE = 'udemy.spiders'
 
+DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
+BASE_URL = f'https://www.udemy.com/api-2.0'
+ALL_COURSE_URL = f'/discovery-units/all_courses'
+PARAMS = 'page_size=60&lang=en&sort=newest&source_page=category_page&locale=en_US&navigation_locale=en_US&sos=pc&fl=cat'
+CATEGORY_IDs = ['268', '269', '273', '274', '276', '278', '288', '290', '292', '294', '296', '300', '328']
+SHORTEST_API_URL = 'https://api.shorte.st/v1/data/url'
+SHORTEST_TOKEN = 'd1d5010ffd90d13f46149d5657dbbccc'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'crawler (+http://www.yourdomain.com)'
+#USER_AGENT = 'udemy (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -47,14 +57,14 @@ ROBOTSTXT_OBEY = True
 # Enable or disable spider middlewares
 # See https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    'crawler.middlewares.CrawlerSpiderMiddleware': 543,
+#    'udemy.middlewares.UdemySpiderMiddleware': 543,
 #}
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-    'crawler.middlewares.CrawlerDownloaderMiddleware': 400,
+    'udemy.middlewares.UdemyDownloaderMiddleware': 400,
 }
 
 
@@ -67,7 +77,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'crawler.pipelines.CrawlerPipeline': 300,
+    'udemy.pipelines.UdemyPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
