@@ -1,13 +1,18 @@
 import json
 import os
 import shutil
-import pickledb
 from scrapy import spiders, Request
 from datetime import datetime
 from udemy import settings
 from udemy.items import UdemyItemParser
+from udemy.settings import MONGO_USERNAME, MONGO_PASSWORD, MONGO_DATABASE
+from pymongo import MongoClient
 
-db = pickledb.load(os.path.join(settings.DATA_PATH, 'udemy.db'), True)
+client = MongoClient(
+    f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@ireland.xjelg.mongodb.net/{MONGO_DATABASE}"
+    f"?retryWrites=true&w=majority"
+)
+db = client.get_default_database()
 
 
 class UdemySpider(spiders.CrawlSpider):
@@ -57,8 +62,7 @@ class UdemySpider(spiders.CrawlSpider):
                 date = datetime.strptime(item['created'], "%Y-%m-%dT%H:%M:%SZ")
                 created = date.strftime('%Y-%m-%d')
 
-            course = db.get(ids)
-            if course and course['created'] == created:
+            if db.course.find_one({"$and": [{"cid": ids}, {created: created}]}):
                 print('Already exists course: {0}'.format(ids))
                 return
 

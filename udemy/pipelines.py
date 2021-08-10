@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import os
 import logging
-import pickledb
 from scrapy.exceptions import DropItem
-from udemy.settings import DATA_PATH
+from udemy.settings import MONGO_USERNAME, MONGO_PASSWORD, MONGO_DATABASE
+from pymongo import MongoClient
 
-
+client = MongoClient(
+    f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@ireland.xjelg.mongodb.net/{MONGO_DATABASE}"
+    f"?retryWrites=true&w=majority"
+)
+db = client.get_default_database()
 logger = logging.getLogger(__name__)
-db = pickledb.load(os.path.join(DATA_PATH, 'udemy.db'), True)
 
 
 class UdemyPipeline(object):
@@ -20,7 +22,7 @@ class UdemyPipeline(object):
             raise DropItem(f"Duplicate item found: {item['cid']}")
 
         try:
-            if db.set(item['cid'], item):
+            if str(db.course.insert_one(item)):
                 logger.info('Successful course id: {0}'.format(item['cid']))
                 self.post_seen.add(item['cid'])
             else:
