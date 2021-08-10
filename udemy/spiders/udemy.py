@@ -62,7 +62,7 @@ class UdemySpider(spiders.CrawlSpider):
                 date = datetime.strptime(item['created'], "%Y-%m-%dT%H:%M:%SZ")
                 created = date.strftime('%Y-%m-%d')
 
-            if db.course.find_one({"$and": [{"cid": ids}, {created: created}]}):
+            if db.course.find_one({"$and": [{"cid": ids}, {"created": {"$gte": created}}]}):
                 print('Already exists course: {0}'.format(ids))
                 return
 
