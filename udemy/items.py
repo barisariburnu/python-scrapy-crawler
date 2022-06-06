@@ -98,7 +98,7 @@ class UdemyItemParser(object):
             headers = {'user_agent': user_agent}
             url = f'{settings.OUOIO_API_URL}https://udemy.com/course/{self.slug}'
             response = requests.get(url, headers=headers, verify=False)
-            self.__shortened_url = response.content
+            self.__shortened_url = response.text
         return self.__shortened_url
 
     def export_to_json(self):
