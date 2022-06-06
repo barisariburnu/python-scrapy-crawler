@@ -96,7 +96,7 @@ class UdemyItemParser(object):
         if not self.__shortened_url:
             user_agent = random.choice(USER_AGENT_LIST)
             headers = {'user_agent': user_agent, 'public-api-token': settings.SHORTEST_TOKEN}
-            data = dict(urlToShorten=f'https://udemy.com{self.url}')
+            data = dict(urlToShorten=f'https://udemy.com/course/{self.slug}')
             response = requests.put(settings.SHORTEST_API_URL, data, headers=headers, verify=False)
             shortened_url = json.loads(response.content)
             self.__shortened_url = shortened_url['shortenedUrl']
