@@ -6,7 +6,6 @@ import json
 import scrapy
 import random
 import requests
-import html2markdown
 from udemy import settings
 from slugify import slugify
 from datetime import datetime
