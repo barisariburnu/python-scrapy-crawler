@@ -24,13 +24,11 @@ class UdemyItem(scrapy.Item):
     created = scrapy.Field()
     instructional_level = scrapy.Field()
     content_info = scrapy.Field()
-    shorten_url = scrapy.Field()
 
 
 class UdemyItemParser(object):
     def __init__(self, response):
         self.response = response
-        self.__shortened_url = None
 
     @property
     def id(self):
@@ -91,16 +89,6 @@ class UdemyItemParser(object):
         result = self.response['content_info']
         return result
 
-    @property
-    def shorten_url(self):
-        if not self.__shortened_url:
-            user_agent = random.choice(USER_AGENT_LIST)
-            headers = {'user_agent': user_agent}
-            url = f'{settings.OUOIO_API_URL}https://udemy.com/course/{self.slug}'
-            response = requests.get(url, headers=headers, verify=False)
-            self.__shortened_url = response.text
-        return self.__shortened_url
-
     def export_to_json(self):
         return dict(
             _id=self.id,
@@ -114,6 +102,5 @@ class UdemyItemParser(object):
             created=self.created,
             instructional_level=self.instructional_level,
             content_info=self.content_info,
-            shorten_url=self.shorten_url,
             shared=0
         )
