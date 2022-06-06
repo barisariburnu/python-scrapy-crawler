@@ -1,18 +1,17 @@
 import json
-import os
-import shutil
 from scrapy import spiders, Request
 from datetime import datetime
 from udemy import settings
 from udemy.items import UdemyItemParser
-from udemy.settings import MONGO_USERNAME, MONGO_PASSWORD, MONGO_DATABASE
+from udemy.settings import MONGO_USERNAME, MONGO_PASSWORD
 from pymongo import MongoClient
 
 client = MongoClient(
-    f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@ireland.xjelg.mongodb.net/{MONGO_DATABASE}"
-    f"?retryWrites=true&w=majority"
+    f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@ac-dczxfng-shard-00-00.latzb7l.mongodb.net:27017,
+    ac-dczxfng-shard-00-01.latzb7l.mongodb.net:27017,ac-dczxfng-shard-00-02.latzb7l.mongodb.net:27017/
+    ?ssl=true&replicaSet=atlas-bwqagz-shard-0&authSource=admin&retryWrites=true&w=majority"
 )
-db = client.get_default_database()
+db = client.udemy
 
 
 class UdemySpider(spiders.CrawlSpider):
@@ -76,17 +75,5 @@ class UdemySpider(spiders.CrawlSpider):
         """""
         data = json.loads(response.body)
         item = UdemyItemParser(data)
-
-        if item.price == 'Free':
-            if not os.path.isdir(item.absolute_path):
-                os.makedirs(item.absolute_path)
-
-            try:
-                item.download_thumbnail()
-                item.save_to_mdx()
-            except Exception as ex:
-                shutil.rmtree(item.absolute_path)
-                print(f'Error : {ex}')
-                return
 
         return item.export_to_json()
