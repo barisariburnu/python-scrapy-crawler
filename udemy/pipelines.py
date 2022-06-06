@@ -17,16 +17,16 @@ class UdemyPipeline(object):
         self.post_seen = set()
 
     def process_item(self, item, spider):
-        if item['cid'] in self.post_seen:
-            raise DropItem(f"Duplicate item found: {item['cid']}")
+        if item['_id'] in self.post_seen:
+            raise DropItem(f"Duplicate item found: {item['_id']}")
 
         try:
             if str(db.course.insert_one(item)):
-                logger.info('Successful course id: {0}'.format(item['cid']))
-                self.post_seen.add(item['cid'])
+                logger.info('Successful course id: {0}'.format(item['_id']))
+                self.post_seen.add(item['_id'])
             else:
-                logger.error('Error course id: {0}'.format(item['cid']))
-                raise DropItem(f"Error item: {item['cid']}")
+                logger.error('Error course id: {0}'.format(item['_id']))
+                raise DropItem(f"Error item: {item['_id']}")
         except Exception as ex:
             raise DropItem(ex)
 
