@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cd /home/ubuntu/python-scrapy-crawler
+cd /home/ubuntu/python_scrapy_udemy
 
-source /home/ubuntu/python-scrapy-crawler/venv3/bin/activate
+source /home/ubuntu/python_scrapy_udemy/venv3/bin/activate
 
-python3 /home/ubuntu/python-scrapy-crawler/venv3/bin/scrapy crawl udemy
+python3 /home/ubuntu/python_scrapy_udemy/venv3/bin/scrapy crawl udemy
