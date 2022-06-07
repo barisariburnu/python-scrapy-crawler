@@ -20,7 +20,7 @@ It is an application where all course content published on udemy api is scrapped
 4. Start scrapy script
     - `python3 scrapy crawl udemy`
 
-### Configuration for Send Message Services
+### Configuration
 
 1. Install and enable cron
     - `sudo apt install cron`
